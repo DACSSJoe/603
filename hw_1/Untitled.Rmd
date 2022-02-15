@@ -1,0 +1,64 @@
+---
+title: "Homework 1"
+author: "Joe Davis"
+date: "2/13/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+###Question 1
+
+*Construct the 90% confidence interval to estimate the actual mean wait time for each of the two procedures. Is the confidence interval narrower for angiography or bypass surgery?*
+
+I wanted to do this one a bit longer-form than necessary, but I also appreciate the change to practice organizing my R code neatly while solving. Need some good reptition to build those good habits!
+
+
+
+```{r Make the Dataset and Solve Q1}
+## 90% CI Score
+qnorm(p = .90) #1.282 used for calculations
+
+## Means, Total N,  and SDs from full question text. B = Bypass A = Angiography
+  #mean wait times for each procedure
+  mean_b <- 19 
+  mean_a <- 18 
+  
+  #standard deviations
+  sd_b <- 10
+  sd_a <- 9
+  
+  #total N
+  n_b <- 539
+  n_a <- 847
+
+## 90% CI margin of error
+  #
+  mofe_bypass <- 1.282*(sd_b/sqrt(n_b))
+  mofe_angiography <- 1.282*(sd_a/sqrt(n_b))
+
+  # Print them
+  mofe_bypass
+  mofe_angiography
+
+## +/- from the data set mean for the range
+  
+  #bypass upper and lower
+  bypass_lower <- mean_b - mofe_bypass
+  bypass_upper <- mean_b + mofe_bypass
+  
+  #combine the upper and lower to list interval
+  ci_bypass <- print(c(bypass_lower, bypass_upper))
+
+  
+  #angiography upper and lower
+  angio_lower <- mean_a - mofe_angiography
+  angio_upper <- mean_a + mofe_angiography
+  
+  #combine the upper and lower to list interval
+  ci_angiography <- print(c(angio_lower, angio_upper))
+```
