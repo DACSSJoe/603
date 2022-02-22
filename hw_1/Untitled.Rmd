@@ -8,21 +8,22 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(samplingbook)
+library(psych)
 ```
 
 
-###Question 1
+### Question 1 ###
 
 *Construct the 90% confidence interval to estimate the actual mean wait time for each of the two procedures. Is the confidence interval narrower for angiography or bypass surgery?*
 
-I wanted to do this one a bit longer-form than necessary, but I also appreciate the change to practice organizing my R code neatly while solving. Need some good reptition to build those good habits!
+I wanted to do this one a bit longer-form than necessary, but I also appreciate the chance to practice organizing my R code neatly while solving. I need some good repetition to build those good habits.
 
+For this question I assigned all of the values in the table to objects to use in the calculations of each treatment's t-scores, margins of error, and confidence intervals. I did a quick check of the qnorm(.95) to see if the t-scores had converged to the normal distribution given the relatively high sample sizes of each treatment. Surprisingly, to me at least, rounding at the .000 level they still had very slightly different levels both to the normal distribution and to each others' scores.
 
+I know I have the standard deviations and these are larger than 30 sample sizes, so I can use `qnorm` and the 1.645 z-score clearing those assumptions. But, it seems like I should use the more precise to the sample size values from `qt` regardless if I could assume normality from the other conditions. I have a note in my code on that point, mostly for my own learning.
 
-```{r Make the Dataset and Solve Q1}
-## 90% CI Score
-qnorm(p = .90) #1.282 used for calculations
-
+```{r Make the Dataset and Solve Q1, include = TRUE}
 ## Means, Total N,  and SDs from full question text. B = Bypass A = Angiography
   #mean wait times for each procedure
   mean_b <- 19 
@@ -36,10 +37,27 @@ qnorm(p = .90) #1.282 used for calculations
   n_b <- 539
   n_a <- 847
 
-## 90% CI margin of error
-  #
-  mofe_bypass <- 1.282*(sd_b/sqrt(n_b))
-  mofe_angiography <- 1.282*(sd_a/sqrt(n_b))
+## 90% CI score finding. .90 = 1 - a and I need  a/2 for the two tails since I have no theory on why the direction of the error would be important. Did a little side exploring of the t distribution and normal distribution scores below.
+  
+
+#Rounded to 1.645 but not used for calculations. I thought it was a sufficiently large sample size that that qt and qnorm should have returned the same values at .000 rounding, but after checking those, each T rounded up differently at the 3rd digits and I might as well use the more precise values if I have them. 
+
+    #normal z score
+  z_heart <- qnorm(.95) 
+  round(z_heart, digits = 3)
+  
+  #check this for t scores
+b_t <- round(qt(.95, df = n_b -1), digits = 3)
+a_t <-  round(qt(.95, df = n_a -1), digits = 3)
+  
+  #print them
+  b_t
+  a_t
+
+## 90% CI standard error of mean/ margin of error
+  #Take the score multiplied by standard deviations and sqrt of Ns
+  mofe_bypass <- b_t*(sd_b/sqrt(n_b))
+  mofe_angiography <- a_t*(sd_a/sqrt(n_b))
 
   # Print them
   mofe_bypass
@@ -59,6 +77,186 @@ qnorm(p = .90) #1.282 used for calculations
   angio_lower <- mean_a - mofe_angiography
   angio_upper <- mean_a + mofe_angiography
   
+
+  
   #combine the upper and lower to list interval
   ci_angiography <- print(c(angio_lower, angio_upper))
+  
+```
+The confidence interval is narrower for angiography, as we have a larger sample size for that procedure's wait time *and* a smaller standard deviation. We would expect this as in theory as the larger sample size mean should be closer to the true population mean, and the smaller standard deviation means we have less variation to begin with. That expectation is shown in both the smaller numerator and the larger denominator produced during the margin or error calculation. For comparison on the denominators, since the standard deviations were already listed: `r sqrt(n_b)` for bypass and `r sqrt(n_a)` for angiography.
+
+
+### Question 2 (add hand calculation if time) ###
+*A survey of 1031 adult Americans was carried out by the National Center for Public Policy. Assume that the sample is representative of adult Americans. Among those surveyed, 567 believed that college education is essential for success. Find the point estimate, p, of the proportion of all adult Americans who believe that a college education is essential for success. Construct and interpret a 95% confidence interval for p.*
+
+Since we are looking to construct this interval around a proportion, I used the `prop.test` function to construct the interval using the total sample size as the `n` input and the 567 raw respondents for college "being essential for success" as the success vector in the function. I decided to use this function versus hand calculating as in question 1.
+
+```{r Solve Q2, include = TRUE}
+
+prop_coll_success <- prop.test(567, 1031, conf.level = .95)
+prop_coll_success
+
+names(prop_coll_success)
+```
+
+The point estimate from the survey data is `r prop_coll_success$estimate` The 95% confidence The interval is `r prop_coll_success$conf.int`. This interval means that we could say we are 95% confident that the proportion of American adults who believe that "college education is essential for success" is somewhere between the lower and upper end of our confidence interval -- assuming the initial survey was indeed random and representative. Representativeness (and randomness, but that's already *extremely* difficult with surveying) would be especially important for this question depending on what variables were used to determine that the initial sample was representative, as beliefs around college education are increasingly subject to the impacts political polarization and thus we could be breaking some of our assumptions needed for our analysis to be accurate depending on which variables were used.
+
+### Question 3 ###
+*Suppose that the financial aid office of UMass Amherst seeks to estimate the mean cost of textbooks per quarter for students. The estimate will be useful if it is within $5 of the true population mean (i.e. they want the confidence interval to have a length of $10 or less). The financial aid office is pretty sure that the amount spent on books varies widely, with most values between $30 and $200. They think that the population standard deviation is about a quarter of this range. Assuming the significance level to be 5%, what should be the size of the sample?*
+
+For this problem, I started off assigning all of the elements of the problem to objects as I did for the prior two. The standard deviation problem is shown in `sd_books` below, as 1/4 of the difference between $200 and $30. The critical z for 5% significance level is shown in finding the `qnorm` result for half of the alpha level. The margin of error we need to aim for is 5 dollars and that is assigned to `book_moe`. I assumed it would take a decent sized sample, at least larger than 30, to get within 5 dollars with that large of a standard deviation and the we would be able to randomly collect this sample, so I used the large sample size for estimating mean equation to find the sample size `n`. It took too long to figure out the fancy letters in Rmarkdown, so I used abbreviations for standard deviation and such, unfortunately. $$n =  sd ^ {2} (z /  M) ^ {2}$$
+
+```{r Solve Q3, include = TRUE}
+
+#Assign all of the elements of the problem to objects
+sd_books <- (200-30)*.25
+sd_books
+
+
+book_z <- qnorm(.975) 
+book_z
+
+book_moe <- 5
+
+# Formula for n from margin of error calculation, large sample is n = sd^2 * z a/2 / M. Calculate by hand first.
+book_n_by_hand <- sd_books ^ 2 * (book_z / book_moe) ^ 2
+
+book_n_by_hand
+
+#Use the samplingbook package to confirm.
+book_n_package <- sample.size.mean(e = book_moe, S = sd_books, level = .95)
+
+book_n_package
+
+```
+After finding the answer of `r round(book_n_by_hand, digits = 0)` --rounded up-- students in the sample by hand calculating `n`, I wanted to check my work using the `samplingbook` package and putting the same elements from the problem into the function. That answer, shown above in `book_n_package` matched my "hand" calculation of 278 students in the sample needed to have a mean estimate within 5 dollars of the true population mean of textbook costs.
+
+
+### Question 4 ###
+*According to a union agreement, the mean income for all senior-level workers in a large service company equals $500 per week. A representative of a women’s group decides to analyze whether the mean income μ for female employees matches this norm. For a random sample of nine female employees, ȳ = $410 and s =90. *
+
+  *-A)Test whether the mean income of female employees differs from $500 per week. Include     assumptions, hypotheses, test statistic, and P-value. Interpret the result.*
+
+  *-B) Report the P-value for Ha : μ < 500. Interpret.*
+
+  *-C) Report and interpret the P-value for H a: μ > 500.*
+  *(Hint: The P-values for the two possible one-sided tests must sum to 1.)*
+  
+Since this question has several follow up questions to report out, I'm going to dive right in to the code portion of the work, and I'll have all of the narrative explanations and steps of work described there.
+
+```{r Solve Question 4}
+#question elements assigned to objects, will use alpha = .05
+  
+  #population
+  all_union_mean <- 500
+  
+  #sample
+  women_mean <- 410
+  women_sd <- 90
+  women_n <- 9
+
+#get the test statistic t
+
+  #estimated standard error
+  women_se <- women_sd / sqrt(women_n)
+  women_se
+  
+  #test statistic
+  women_t <- (women_mean - all_union_mean) / women_se
+  women_t
+  
+#find two tail p-value, round to two digits
+  women_p <- round(2*pt(-abs(women_t), df = 8, lower.tail = FALSE ), digits = 2)
+  women_p
+  
+#p for < 500, round to two digits
+  women_lower_p <- round(pt(-abs(women_t), df = 8, lower.tail = TRUE), digits = 2)
+  women_lower_p
+  
+#p for > 500, round to two digits
+  women_greater_p <- round(pt(-abs(women_t), df = 8, lower.tail = FALSE), digits = 2)
+  women_greater_p
+```
+
+- Assumptions: Because this is a small sample, I'm using the two-sided t-test as it is robust when the data may not clear the normality assumptions. Given the smaller sample size of the study, highly skewed data could impact one-tailed tests and the question didn't explicitly state that they were looking higher or lower than the overall union average
+
+- Hypotheses: Null hypothesis is that the mean wage for women = 500 dollars, the same as the contract required mean for all senior workers at the union. The alternative hypothesis is that the mean wage for women =/= 500 dollars. 
+
+- Test statistic: The test statistic `women_t` has a value of `r women_t`. Since this is a negative value due to the sample mean being lower than the population mean, the absolute value should be used in calculating the p value.
+
+- P value: The two-sided P value from `women_t` with 8 degrees of freedom equals `r women_p`.
+
+- Interpreting the results: Since the two-tailed P value is lower than our pre-selected alpha level of .05 by some distance, we can reject the null hypothesis that the mean wage for women is equal to 500 dollars, and accept the alternative hypothesis that it is *not* equal to 500. The below data points make it seem as though it is very likely below the overall union mean, which lines up with the mean and sd data from their study. If only the very outer bounds of the deviation hits the overall mean, it seems like this all confirms that the female employee mean is < 500 dollars. I would suggest initiating the process of review, confirmation of the study, and the grievance process.
+
+- Question B: The P value for the womens' mean weekly wage being less than 500 is `r women_lower_p`. This means that if our null hypothesis was true, we would have a 99% chance of getting a value below 500 for our sample mean. Being that the contract specifies an overall mean of 500 and it's stated that this is a large company so we can assume normality through the Central Limit Theorem, we have a lot of evidence that the mean weekly wage for women is likely lower than what the contract specifies. Being that we have a small sample size it is possible for the one-tailed value to be off with highly skewed data, however. Given the rejection of the null and the one tail results here and below for greater than 500, I think the women's group would have a strong case that their mean wage is not 500 and most likely lower than 500 dollars.
+
+- Question C: The P value for the mean weekly wage for women being greater than 500 is `r women_greater_p`. This means that if the null hypothesis was true, we would expect to get a mean weekly wage for women greater than the population mean wage 1% of the time. With the same small sample size caveat as above on one tailed results, this split P values for the tails above and below the population mean is quite extreme and would be another supporting point in the group filing a grievance.
+
+### Question 5 ###
+*Jones and Smith separately conduct studies to test H0: μ = 500 against Ha : μ ≠ 500, each with n = 1000. Jones gets ȳ = 519.5, with se = 10.0. Smith gets ȳ = 519. 7,with se = 10.0.*
+
+  *A) Show that t = 1.95 and P-value = 0.051 for Jones. Show that t = 1.97 and P-value = 0.049 for Smith. *
+  
+  *B) Using α = 0.05, for each study indicate whether the result is “statistically significant.” *
+  
+  *C)Using this example, explain the misleading aspects of reporting the result of a test as “P ≤ 0.05” versus “P > 0.05,” or as “reject H0” versus “Do not reject H0 ,” without reporting the actual P-value.*
+  
+Same as above, I'm going to assign out the objects and then go through the solution steps below the R code chunk. The answer for question A will be in the R code chunk, while I will answer the narrative aspects of the other questions in the text below.
+
+```{r Solve 5}
+#Question Elements
+  #both studies with same n
+  study_n <- 1000
+
+  #null mean = 500
+  #alt mean =/= 500
+
+  #jones study elements
+  jones_mean <- 519.5
+  jones_se <- 10.0
+
+  #smith study elements
+  smith_mean <- 519.7
+  smith_se <- 10.0
+
+
+#Solve for Smith
+  
+  #t for Smith, use two digits and it must equal 1.97
+  smith_t <- round((smith_mean - 500) / smith_se,  digits = 2)
+  smith_t #It's 1.97 like it's supposed to be,  yay!
+  
+  #P for Smith, use three digits and two-tailed 
+  smith_p <- round(2 * pt(-abs(smith_t), df = 999), digits = 3)
+  smith_p # It's .049 like it's supposed to be!
+
+#Solve for Jones
+  
+  #t for Jones, use two digits and it must equal 1.95.
+  jones_t <- round((jones_mean - 500) / jones_se, digits = 2)
+  jones_t #It's 1.95 like it's suppost to be, yay!
+  
+  #P for Jones, use three digits and it must equal .051
+  jones_p <- round(2 * pt(-abs(jones_t), df = 999), digits = 3)
+  jones_p #It's .051 like it's supposed to be!
+```
+
+- Question B and C: I thought it made sense to answer these questions in one response versus splitting them up by bullet point. Technically, both studies would be "statistically significant" at the .05 level as rounding .049 and .051 to two digits would take them both to less than or equal to .05. Rounding them without disclosing that would be no good. This is also quite misleading to attribute practical significance to a difference in P values of .002 to our arbitrarily set level of significance. Practically speaking, there is no real difference in the outcomes of these studies.
+
+Without rounding, only Smith's .049 would be below the alpha level and Jones' .051 would be above. With these fine margins, reporting only whether the null was rejected or if we failed to reject it, or even just listing the "p less than or equal to .05 or p greater than .05" statement without the raw p values included would also ascribe practical significance in difference to these two studies even though they are very nearly identical. The differences could very well be random noise and chance, and reporting out the statement alone would make it harder to asses that.
+
+Choosing to publish Smith's study just because it cleared the threshold and not Jones' as well could make it harder to see the full picture of the parameter they studied or analyze the overall random variability in the experimental findings in a meta analysis setting. 
+
+### Question 6 ###
+*Are the taxes on gasoline very high in the United States? According to the American Petroleum Institute, the per gallon federal tax that was levied on gasoline was 18.4 cents per gallon. However, state and local taxes vary over the same period.*
+
+*The sample data of gasoline taxes for 18 large cities is given below in the variable called gas_taxes.*
+
+*Is there enough evidence to conclude at a 95% confidence level that the average tax per gallon of gas in the US in 2005 was less than 45 cents? Explain.*
+
+```{r Solve 6}
+gas_taxes <- c(51.27, 47.43, 38.89, 41.95, 28.61, 41.29, 52.19, 49.48, 35.02, 48.13, 39.28, 54.41, 41.66, 30.28, 18.49, 38.72, 33.41, 45.02)
+
+#use describe from the psych package to look at shape of gas_taxes
+describe(gas_taxes)
 ```
