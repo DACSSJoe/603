@@ -21,7 +21,8 @@ I wanted to do this one a bit longer-form than necessary, but I also appreciate 
 
 For this question I assigned all of the values in the table to objects to use in the calculations of each treatment's t-scores, margins of error, and confidence intervals. I did a quick check of the qnorm(.95) to see if the t-scores had converged to the normal distribution given the relatively high sample sizes of each treatment. Surprisingly, to me at least, rounding at the .000 level they still had very slightly different levels both to the normal distribution and to each others' scores.
 
-I know I have the standard deviations and these are larger than 30 sample sizes, so I can use `qnorm` and the 1.645 z-score clearing those assumptions. But, it seems like I should use the more precise to the sample size values from `qt` regardless if I could assume normality from the other conditions. I have a note in my code on that point, mostly for my own learning.
+I know I have the standard deviations, wait time would be a continuous variable, and these samples are larger than n = 30 so I can use `qnorm` and the 1.645 z critical value clearing those assumptions. But, it seems like I should use the distribution with fatter tails relative to the sample size values from `qt` regardless if I could assume normality from the other conditions, as to err on the side of caution for analyzing and communicating medical procedure data. I have a note in my code on that point, mostly for my own reference and will solve for the normal distribution values as well. After running the calculations the practical effect would be introducing slightly more uncertainty in the mean wait time for the angiography procedure while still keeping that procedures' interval narrower, as we'd expect, than that of the bypass procedure. Especially if this was to be used to set patient expectations on wait times, the wider range would be the option a hospital or doctor would communicate, but we do appear to be in the range where t and z distributions are becoming quite similar.
+
 
 ```{r Make the Dataset and Solve Q1, include = TRUE}
 ## Means, Total N,  and SDs from full question text. B = Bypass A = Angiography
@@ -40,7 +41,7 @@ I know I have the standard deviations and these are larger than 30 sample sizes,
 ## 90% CI score finding. .90 = 1 - a and I need  a/2 for the two tails since I have no theory on why the direction of the error would be important. Did a little side exploring of the t distribution and normal distribution scores below.
   
 
-#Rounded to 1.645 but not used for calculations. I thought it was a sufficiently large sample size that that qt and qnorm should have returned the same values at .000 rounding, but after checking those, each T rounded up differently at the 3rd digits and I might as well use the more precise values if I have them. 
+#Rounded to 1.645 but not used for calculations. I thought it was a sufficiently large sample size that that qt and qnorm should have returned the same values at .000 rounding, but after checking those, each T rounded up differently at the 3rd digits and for medical data I would rather err on the side of caution  
 
     #normal z score
   z_heart <- qnorm(.95) 
@@ -55,11 +56,19 @@ a_t <-  round(qt(.95, df = n_a -1), digits = 3)
   a_t
 
 ## 90% CI standard error of mean/ margin of error
-  #Take the score multiplied by standard deviations and sqrt of Ns
+  #Take the score multiplied by standard deviations and sqrt of Ns, t value
   mofe_bypass <- b_t*(sd_b/sqrt(n_b))
   mofe_angiography <- a_t*(sd_a/sqrt(n_b))
-
-  # Print them
+  
+  #doing this with z 1.645
+  mofe_bypass_z <- 1.645*(sd_b/sqrt(n_b))
+  mofe_angiography_z <- 1.645*(sd_a/sqrt(n_a))
+  
+  #print the normal distribution score MoE
+  mofe_bypass_z
+  mofe_angiography_z
+  
+  # Print them using t value
   mofe_bypass
   mofe_angiography
 
@@ -82,11 +91,24 @@ a_t <-  round(qt(.95, df = n_a -1), digits = 3)
   #combine the upper and lower to list interval
   ci_angiography <- print(c(angio_lower, angio_upper))
   
+#Normal distribution 90% CI
+  #bypass Z
+  bypass_lower_z <- mean_b - mofe_bypass_z
+  bypass_upper_z <- mean_b + mofe_bypass_z
+  
+  ci_bypass_z <- (print(c(bypass_lower_z, bypass_upper_z)))
+  
+  #angiography Z
+  angiography_lower_z <- mean_a - mofe_angiography_z
+  angiography_upper_z <- mean_a + mofe_angiography_z
+  
+  ci_angiography_z <- (print(c(angiography_lower_z, angiography_upper_z)))
+    
 ```
-The confidence interval is narrower for angiography, as we have a larger sample size for that procedure's wait time *and* a smaller standard deviation. We would expect this as in theory as the larger sample size mean should be closer to the true population mean, and the smaller standard deviation means we have less variation to begin with. That expectation is shown in both the smaller numerator and the larger denominator produced during the margin or error calculation. For comparison on the denominators, since the standard deviations were already listed: `r sqrt(n_b)` for bypass and `r sqrt(n_a)` for angiography.
+The confidence interval is narrower for angiography, as we have a larger sample size for that procedure's wait time *and* a smaller standard deviation. We would expect this as in theory as the larger sample size mean should be closer to the true population mean, and the smaller standard deviation means we have less variation to begin with. That expectation is shown in both the smaller numerator and the larger denominator produced during the margin or error calculation. For comparison on the denominators, since the standard deviations were already listed in the table: `r sqrt(n_b)` for bypass and `r sqrt(n_a)` for angiography. For completeness, the normal distribution CI's are `r ci_angiography_z` for angiography and `r ci_bypass_z` for the bypass procedure.
 
 
-### Question 2 (add hand calculation if time) ###
+### Question 2 ###
 *A survey of 1031 adult Americans was carried out by the National Center for Public Policy. Assume that the sample is representative of adult Americans. Among those surveyed, 567 believed that college education is essential for success. Find the point estimate, p, of the proportion of all adult Americans who believe that a college education is essential for success. Construct and interpret a 95% confidence interval for p.*
 
 Since we are looking to construct this interval around a proportion, I used the `prop.test` function to construct the interval using the total sample size as the `n` input and the 567 raw respondents for college "being essential for success" as the success vector in the function. I decided to use this function versus hand calculating as in question 1.
@@ -99,7 +121,7 @@ prop_coll_success
 names(prop_coll_success)
 ```
 
-The point estimate from the survey data is `r prop_coll_success$estimate` The 95% confidence The interval is `r prop_coll_success$conf.int`. This interval means that we could say we are 95% confident that the proportion of American adults who believe that "college education is essential for success" is somewhere between the lower and upper end of our confidence interval -- assuming the initial survey was indeed random and representative. Representativeness (and randomness, but that's already *extremely* difficult with surveying) would be especially important for this question depending on what variables were used to determine that the initial sample was representative, as beliefs around college education are increasingly subject to the impacts political polarization and thus we could be breaking some of our assumptions needed for our analysis to be accurate depending on which variables were used.
+The point estimate from the survey data is `r round(prop_coll_success$estimate, digits = 2)` The 95% confidence The interval is `r round(prop_coll_success$conf.int, digits = 2)`. This interval means that we could say we are 95% confident that the proportion of American adults who believe that "college education is essential for success" is somewhere between the lower and upper end of our confidence interval -- assuming the initial survey was indeed random and representative. Representativeness (and randomness, but that's already *extremely* difficult with surveying) would be especially important for this question depending on what variables were used to determine that the initial sample was representative, as beliefs around college education are increasingly subject to the impacts political polarization and thus we could be breaking some of our assumptions needed for our analysis to be accurate depending on which variables were used.
 
 ### Question 3 ###
 *Suppose that the financial aid office of UMass Amherst seeks to estimate the mean cost of textbooks per quarter for students. The estimate will be useful if it is within $5 of the true population mean (i.e. they want the confidence interval to have a length of $10 or less). The financial aid office is pretty sure that the amount spent on books varies widely, with most values between $30 and $200. They think that the population standard deviation is about a quarter of this range. Assuming the significance level to be 5%, what should be the size of the sample?*
@@ -182,7 +204,7 @@ Since this question has several follow up questions to report out, I'm going to 
 
 - Hypotheses: Null hypothesis is that the mean wage for women = 500 dollars, the same as the contract required mean for all senior workers at the union. The alternative hypothesis is that the mean wage for women =/= 500 dollars. 
 
-- Test statistic: The test statistic `women_t` has a value of `r women_t`. Since this is a negative value due to the sample mean being lower than the population mean, the absolute value should be used in calculating the p value.
+- Test statistic: The test statistic `women_t` has a value of `r women_t`. Since this is a negative value due to the sample mean being lower than the population mean, it's important to remember that the absolute value should be used in calculating the p value.
 
 - P value: The two-sided P value from `women_t` with 8 degrees of freedom equals `r women_p`.
 
@@ -190,7 +212,7 @@ Since this question has several follow up questions to report out, I'm going to 
 
 - Question B: The P value for the womens' mean weekly wage being less than 500 is `r women_lower_p`. This means that if our null hypothesis was true, we would have a 99% chance of getting a value below 500 for our sample mean. Being that the contract specifies an overall mean of 500 and it's stated that this is a large company so we can assume normality through the Central Limit Theorem, we have a lot of evidence that the mean weekly wage for women is likely lower than what the contract specifies. Being that we have a small sample size it is possible for the one-tailed value to be off with highly skewed data, however. Given the rejection of the null and the one tail results here and below for greater than 500, I think the women's group would have a strong case that their mean wage is not 500 and most likely lower than 500 dollars.
 
-- Question C: The P value for the mean weekly wage for women being greater than 500 is `r women_greater_p`. This means that if the null hypothesis was true, we would expect to get a mean weekly wage for women greater than the population mean wage 1% of the time. With the same small sample size caveat as above on one tailed results, this split P values for the tails above and below the population mean is quite extreme and would be another supporting point in the group filing a grievance.
+- Question C: The P value for the mean weekly wage for women being greater than 500 is `r women_greater_p`. This means that if the null hypothesis was true, we would expect to get a mean weekly wage for women greater than the population mean wage 1% of the time. With the same small sample size caveat as above on one tailed results, this split in P values which would have us fail to reject and then reject the null hypothesis respectively, for above and below the population mean is quite extreme and would be another supporting point in the group filing a grievance.
 
 ### Question 5 ###
 *Jones and Smith separately conduct studies to test H0: μ = 500 against Ha : μ ≠ 500, each with n = 1000. Jones gets ȳ = 519.5, with se = 10.0. Smith gets ȳ = 519. 7,with se = 10.0.*
@@ -254,9 +276,24 @@ Choosing to publish Smith's study just because it cleared the threshold and not 
 
 *Is there enough evidence to conclude at a 95% confidence level that the average tax per gallon of gas in the US in 2005 was less than 45 cents? Explain.*
 
+After reading the question, I don't think our initial sample was collected in a way that would allow us to be confident in a confidence interval constructed from it to look at the average price in the nation as a whole in 2005. If the federal tax is constant at 18.4, it looks like most of the variability from city to city in the sample data is driven by state and local tax levy decisions. The mean for the `gas_tax` data is 40.86, so over half of our mean amount comes from state and local variables that do not look to be accounted for in the sampling description as is. Most Americans in 2005 (and still today), did not live in very large cities, the amount depending of course on the exact definition of "large."
+
+Our sample is only from 18 *large* cities in the country, and I think it's reasonable to assume large cities have, or the very least could have, systemically different gas tax policies than other population densities. Some states could have caps or specific legislation that could impact the overall national average, and there's not enough information about how the 18 large cities were selected or sampled to clear all of the assumptions, even if we didn't think large cities varied from suburban, exurban or rural geographies in a way that would skew the small sample of data that we do have. Exploring bootstrapping or other approaches would also be impacted by this fact.
+
+Now, if I'm reading entirely too much into this set up and I should just show that I can evaluate if our mean is below a set level using a confidence interval, I'll proceed to do that, too! To answer this question, I'll use the `psych` package to get the descriptive statistics and look those over for fun and possible use to calculate by hand if the t.test result looks funny. Then I'll use `t.test(gas_tax)` and look at the 95% CI range.
+
+If the entire confidence interval is below 45 cents we would have enough evidence to say we think it's 95% likely that the mean gas tax is below the 45 cent level, the equivalent of rejecting the null hypothesis and accepting the alternative hypothesis of gas taxes were likely lower than 45 cents. If the interval includes 45 and/or above that level we don't have enough information, and would be doing the equivalent of failing to reject the null hypothesis.
+
 ```{r Solve 6}
 gas_taxes <- c(51.27, 47.43, 38.89, 41.95, 28.61, 41.29, 52.19, 49.48, 35.02, 48.13, 39.28, 54.41, 41.66, 30.28, 18.49, 38.72, 33.41, 45.02)
 
-#use describe from the psych package to look at shape of gas_taxes
-describe(gas_taxes)
+#Use describe from the psych package for overview of gas_tax data, could use the variables here to hand calculate the CI.
+gas_tax_summary <- describe(gas_taxes)
+gas_tax_summary
+
+#Use t.test on gas_taxes to see the 95% CI
+t.test(gas_taxes)
+
 ```
+
+The 95% interval does contain 45 cents, so we cannot say that we have enough evidence at this confidence level and interval to do the equivalent of rejecting the null hypothesis. Since the null value is at the very very top of the interval, and putting aside the other issues with the sample to begin with, it seems like the sort of result where we could say in practice it was likely lower than 45 cents. Since gas taxes and prices go to the third digit at the pump, our result would have a maximum 95% CI level "at the pump" reading of .455. It feels safe to describe in actual practice with that interval that we're confident it was 45 cents or lower, even if we'd need a bit more data to say it in specific statistical terms.

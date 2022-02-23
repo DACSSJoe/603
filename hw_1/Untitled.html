@@ -176,7 +176,7 @@ pre code {
 <p><em>Construct the 90% confidence interval to estimate the actual mean wait time for each of the two procedures. Is the confidence interval narrower for angiography or bypass surgery?</em></p>
 <p>I wanted to do this one a bit longer-form than necessary, but I also appreciate the chance to practice organizing my R code neatly while solving. I need some good repetition to build those good habits.</p>
 <p>For this question I assigned all of the values in the table to objects to use in the calculations of each treatment’s t-scores, margins of error, and confidence intervals. I did a quick check of the qnorm(.95) to see if the t-scores had converged to the normal distribution given the relatively high sample sizes of each treatment. Surprisingly, to me at least, rounding at the .000 level they still had very slightly different levels both to the normal distribution and to each others’ scores.</p>
-<p>I know I have the standard deviations and these are larger than 30 sample sizes, so I can use <code>qnorm</code> and the 1.645 z-score clearing those assumptions. But, it seems like I should use the more precise to the sample size values from <code>qt</code> regardless if I could assume normality from the other conditions. I have a note in my code on that point, mostly for my own learning.</p>
+<p>I know I have the standard deviations, wait time would be a continuous variable, and these samples are larger than n = 30 so I can use <code>qnorm</code> and the 1.645 z critical value clearing those assumptions. But, it seems like I should use the distribution with fatter tails relative to the sample size values from <code>qt</code> regardless if I could assume normality from the other conditions, as to err on the side of caution for analyzing and communicating medical procedure data. I have a note in my code on that point, mostly for my own reference and will solve for the normal distribution values as well. After running the calculations the practical effect would be introducing slightly more uncertainty in the mean wait time for the angiography procedure while still keeping that procedures’ interval narrower, as we’d expect, than that of the bypass procedure. Especially if this was to be used to set patient expectations on wait times, the wider range would be the option a hospital or doctor would communicate, but we do appear to be in the range where t and z distributions are becoming quite similar.</p>
 <pre class="r"><code>## Means, Total N,  and SDs from full question text. B = Bypass A = Angiography
   #mean wait times for each procedure
   mean_b &lt;- 19 
@@ -193,7 +193,7 @@ pre code {
 ## 90% CI score finding. .90 = 1 - a and I need  a/2 for the two tails since I have no theory on why the direction of the error would be important. Did a little side exploring of the t distribution and normal distribution scores below.
   
 
-#Rounded to 1.645 but not used for calculations. I thought it was a sufficiently large sample size that that qt and qnorm should have returned the same values at .000 rounding, but after checking those, each T rounded up differently at the 3rd digits and I might as well use the more precise values if I have them. 
+#Rounded to 1.645 but not used for calculations. I thought it was a sufficiently large sample size that that qt and qnorm should have returned the same values at .000 rounding, but after checking those, each T rounded up differently at the 3rd digits and for medical data I would rather err on the side of caution  
 
     #normal z score
   z_heart &lt;- qnorm(.95) 
@@ -209,11 +209,20 @@ a_t &lt;-  round(qt(.95, df = n_a -1), digits = 3)
 <pre class="r"><code>  a_t</code></pre>
 <pre><code>## [1] 1.647</code></pre>
 <pre class="r"><code>## 90% CI standard error of mean/ margin of error
-  #Take the score multiplied by standard deviations and sqrt of Ns
+  #Take the score multiplied by standard deviations and sqrt of Ns, t value
   mofe_bypass &lt;- b_t*(sd_b/sqrt(n_b))
   mofe_angiography &lt;- a_t*(sd_a/sqrt(n_b))
-
-  # Print them
+  
+  #doing this with z 1.645
+  mofe_bypass_z &lt;- 1.645*(sd_b/sqrt(n_b))
+  mofe_angiography_z &lt;- 1.645*(sd_a/sqrt(n_a))
+  
+  #print the normal distribution score MoE
+  mofe_bypass_z</code></pre>
+<pre><code>## [1] 0.7085517</code></pre>
+<pre class="r"><code>  mofe_angiography_z</code></pre>
+<pre><code>## [1] 0.5087058</code></pre>
+<pre class="r"><code>  # Print them using t value
   mofe_bypass</code></pre>
 <pre><code>## [1] 0.7098439</code></pre>
 <pre class="r"><code>  mofe_angiography</code></pre>
@@ -236,10 +245,23 @@ a_t &lt;-  round(qt(.95, df = n_a -1), digits = 3)
   #combine the upper and lower to list interval
   ci_angiography &lt;- print(c(angio_lower, angio_upper))</code></pre>
 <pre><code>## [1] 17.36153 18.63847</code></pre>
-<p>The confidence interval is narrower for angiography, as we have a larger sample size for that procedure’s wait time <em>and</em> a smaller standard deviation. We would expect this as in theory as the larger sample size mean should be closer to the true population mean, and the smaller standard deviation means we have less variation to begin with. That expectation is shown in both the smaller numerator and the larger denominator produced during the margin or error calculation. For comparison on the denominators, since the standard deviations were already listed: 23.2163735 for bypass and 29.1032644 for angiography.</p>
+<pre class="r"><code>#Normal distribution 90% CI
+  #bypass Z
+  bypass_lower_z &lt;- mean_b - mofe_bypass_z
+  bypass_upper_z &lt;- mean_b + mofe_bypass_z
+  
+  ci_bypass_z &lt;- (print(c(bypass_lower_z, bypass_upper_z)))</code></pre>
+<pre><code>## [1] 18.29145 19.70855</code></pre>
+<pre class="r"><code>  #angiography Z
+  angiography_lower_z &lt;- mean_a - mofe_angiography_z
+  angiography_upper_z &lt;- mean_a + mofe_angiography_z
+  
+  ci_angiography_z &lt;- (print(c(angiography_lower_z, angiography_upper_z)))</code></pre>
+<pre><code>## [1] 17.49129 18.50871</code></pre>
+<p>The confidence interval is narrower for angiography, as we have a larger sample size for that procedure’s wait time <em>and</em> a smaller standard deviation. We would expect this as in theory as the larger sample size mean should be closer to the true population mean, and the smaller standard deviation means we have less variation to begin with. That expectation is shown in both the smaller numerator and the larger denominator produced during the margin or error calculation. For comparison on the denominators, since the standard deviations were already listed in the table: 23.2163735 for bypass and 29.1032644 for angiography. For completeness, the normal distribution CI’s are 17.4912942, 18.5087058 for angiography and 18.2914483, 19.7085517 for the bypass procedure.</p>
 </div>
-<div id="question-2-add-hand-calculation-if-time" class="section level3">
-<h3>Question 2 (add hand calculation if time)</h3>
+<div id="question-2" class="section level3">
+<h3>Question 2</h3>
 <p><em>A survey of 1031 adult Americans was carried out by the National Center for Public Policy. Assume that the sample is representative of adult Americans. Among those surveyed, 567 believed that college education is essential for success. Find the point estimate, p, of the proportion of all adult Americans who believe that a college education is essential for success. Construct and interpret a 95% confidence interval for p.</em></p>
 <p>Since we are looking to construct this interval around a proportion, I used the <code>prop.test</code> function to construct the interval using the total sample size as the <code>n</code> input and the 567 raw respondents for college “being essential for success” as the success vector in the function. I decided to use this function versus hand calculating as in question 1.</p>
 <pre class="r"><code>prop_coll_success &lt;- prop.test(567, 1031, conf.level = .95)
@@ -258,7 +280,7 @@ prop_coll_success</code></pre>
 <pre class="r"><code>names(prop_coll_success)</code></pre>
 <pre><code>## [1] &quot;statistic&quot;   &quot;parameter&quot;   &quot;p.value&quot;     &quot;estimate&quot;    &quot;null.value&quot; 
 ## [6] &quot;conf.int&quot;    &quot;alternative&quot; &quot;method&quot;      &quot;data.name&quot;</code></pre>
-<p>The point estimate from the survey data is 0.5499515 The 95% confidence The interval is 0.5189682, 0.580558. This interval means that we could say we are 95% confident that the proportion of American adults who believe that “college education is essential for success” is somewhere between the lower and upper end of our confidence interval – assuming the initial survey was indeed random and representative. Representativeness (and randomness, but that’s already <em>extremely</em> difficult with surveying) would be especially important for this question depending on what variables were used to determine that the initial sample was representative, as beliefs around college education are increasingly subject to the impacts political polarization and thus we could be breaking some of our assumptions needed for our analysis to be accurate depending on which variables were used.</p>
+<p>The point estimate from the survey data is 0.55 The 95% confidence The interval is 0.52, 0.58. This interval means that we could say we are 95% confident that the proportion of American adults who believe that “college education is essential for success” is somewhere between the lower and upper end of our confidence interval – assuming the initial survey was indeed random and representative. Representativeness (and randomness, but that’s already <em>extremely</em> difficult with surveying) would be especially important for this question depending on what variables were used to determine that the initial sample was representative, as beliefs around college education are increasingly subject to the impacts political polarization and thus we could be breaking some of our assumptions needed for our analysis to be accurate depending on which variables were used.</p>
 </div>
 <div id="question-3" class="section level3">
 <h3>Question 3</h3>
@@ -331,11 +353,11 @@ book_n_package</code></pre>
 <ul>
 <li><p>Assumptions: Because this is a small sample, I’m using the two-sided t-test as it is robust when the data may not clear the normality assumptions. Given the smaller sample size of the study, highly skewed data could impact one-tailed tests and the question didn’t explicitly state that they were looking higher or lower than the overall union average</p></li>
 <li><p>Hypotheses: Null hypothesis is that the mean wage for women = 500 dollars, the same as the contract required mean for all senior workers at the union. The alternative hypothesis is that the mean wage for women =/= 500 dollars.</p></li>
-<li><p>Test statistic: The test statistic <code>women_t</code> has a value of -3. Since this is a negative value due to the sample mean being lower than the population mean, the absolute value should be used in calculating the p value.</p></li>
+<li><p>Test statistic: The test statistic <code>women_t</code> has a value of -3. Since this is a negative value due to the sample mean being lower than the population mean, it’s important to remember that the absolute value should be used in calculating the p value.</p></li>
 <li><p>P value: The two-sided P value from <code>women_t</code> with 8 degrees of freedom equals 1.98.</p></li>
 <li><p>Interpreting the results: Since the two-tailed P value is lower than our pre-selected alpha level of .05 by some distance, we can reject the null hypothesis that the mean wage for women is equal to 500 dollars, and accept the alternative hypothesis that it is <em>not</em> equal to 500. The below data points make it seem as though it is very likely below the overall union mean, which lines up with the mean and sd data from their study. If only the very outer bounds of the deviation hits the overall mean, it seems like this all confirms that the female employee mean is &lt; 500 dollars. I would suggest initiating the process of review, confirmation of the study, and the grievance process.</p></li>
 <li><p>Question B: The P value for the womens’ mean weekly wage being less than 500 is 0.01. This means that if our null hypothesis was true, we would have a 99% chance of getting a value below 500 for our sample mean. Being that the contract specifies an overall mean of 500 and it’s stated that this is a large company so we can assume normality through the Central Limit Theorem, we have a lot of evidence that the mean weekly wage for women is likely lower than what the contract specifies. Being that we have a small sample size it is possible for the one-tailed value to be off with highly skewed data, however. Given the rejection of the null and the one tail results here and below for greater than 500, I think the women’s group would have a strong case that their mean wage is not 500 and most likely lower than 500 dollars.</p></li>
-<li><p>Question C: The P value for the mean weekly wage for women being greater than 500 is 0.99. This means that if the null hypothesis was true, we would expect to get a mean weekly wage for women greater than the population mean wage 1% of the time. With the same small sample size caveat as above on one tailed results, this split P values for the tails above and below the population mean is quite extreme and would be another supporting point in the group filing a grievance.</p></li>
+<li><p>Question C: The P value for the mean weekly wage for women being greater than 500 is 0.99. This means that if the null hypothesis was true, we would expect to get a mean weekly wage for women greater than the population mean wage 1% of the time. With the same small sample size caveat as above on one tailed results, this split in P values which would have us fail to reject and then reject the null hypothesis respectively, for above and below the population mean is quite extreme and would be another supporting point in the group filing a grievance.</p></li>
 </ul>
 </div>
 <div id="question-5" class="section level3">
@@ -392,12 +414,31 @@ book_n_package</code></pre>
 <p><em>Are the taxes on gasoline very high in the United States? According to the American Petroleum Institute, the per gallon federal tax that was levied on gasoline was 18.4 cents per gallon. However, state and local taxes vary over the same period.</em></p>
 <p><em>The sample data of gasoline taxes for 18 large cities is given below in the variable called gas_taxes.</em></p>
 <p><em>Is there enough evidence to conclude at a 95% confidence level that the average tax per gallon of gas in the US in 2005 was less than 45 cents? Explain.</em></p>
+<p>After reading the question, I don’t think our initial sample was collected in a way that would allow us to be confident in a confidence interval constructed from it to look at the average price in the nation as a whole in 2005. If the federal tax is constant at 18.4, it looks like most of the variability from city to city in the sample data is driven by state and local tax levy decisions. The mean for the <code>gas_tax</code> data is 40.86, so over half of our mean amount comes from state and local variables that do not look to be accounted for in the sampling description as is. Most Americans in 2005 (and still today), did not live in very large cities, the amount depending of course on the exact definition of “large.”</p>
+<p>Our sample is only from 18 <em>large</em> cities in the country, and I think it’s reasonable to assume large cities have, or the very least could have, systemically different gas tax policies than other population densities. Some states could have caps or specific legislation that could impact the overall national average, and there’s not enough information about how the 18 large cities were selected or sampled to clear all of the assumptions, even if we didn’t think large cities varied from suburban, exurban or rural geographies in a way that would skew the small sample of data that we do have. Exploring bootstrapping or other approaches would also be impacted by this fact.</p>
+<p>Now, if I’m reading entirely too much into this set up and I should just show that I can evaluate if our mean is below a set level using a confidence interval, I’ll proceed to do that, too! To answer this question, I’ll use the <code>psych</code> package to get the descriptive statistics and look those over for fun and possible use to calculate by hand if the t.test result looks funny. Then I’ll use <code>t.test(gas_tax)</code> and look at the 95% CI range.</p>
+<p>If the entire confidence interval is below 45 cents we would have enough evidence to say we think it’s 95% likely that the mean gas tax is below the 45 cent level, the equivalent of rejecting the null hypothesis and accepting the alternative hypothesis of gas taxes were likely lower than 45 cents. If the interval includes 45 and/or above that level we don’t have enough information, and would be doing the equivalent of failing to reject the null hypothesis.</p>
 <pre class="r"><code>gas_taxes &lt;- c(51.27, 47.43, 38.89, 41.95, 28.61, 41.29, 52.19, 49.48, 35.02, 48.13, 39.28, 54.41, 41.66, 30.28, 18.49, 38.72, 33.41, 45.02)
 
-#use describe from the psych package to look at shape of gas_taxes
-describe(gas_taxes)</code></pre>
+#Use describe from the psych package for overview of gas_tax data, could use the variables here to hand calculate the CI.
+gas_tax_summary &lt;- describe(gas_taxes)
+gas_tax_summary</code></pre>
 <pre><code>##    vars  n  mean   sd median trimmed  mad   min   max range  skew kurtosis   se
 ## X1    1 18 40.86 9.31  41.47   41.41 9.72 18.49 54.41 35.92 -0.58    -0.32 2.19</code></pre>
+<pre class="r"><code>#Use t.test on gas_taxes to see the 95% CI
+t.test(gas_taxes)</code></pre>
+<pre><code>## 
+##  One Sample t-test
+## 
+## data:  gas_taxes
+## t = 18.625, df = 17, p-value = 9.555e-13
+## alternative hypothesis: true mean is not equal to 0
+## 95 percent confidence interval:
+##  36.23386 45.49169
+## sample estimates:
+## mean of x 
+##  40.86278</code></pre>
+<p>The 95% interval does contain 45 cents, so we cannot say that we have enough evidence at this confidence level and interval to do the equivalent of rejecting the null hypothesis. Since the null value is at the very very top of the interval, and putting aside the other issues with the sample to begin with, it seems like the sort of result where we could say in practice it was likely lower than 45 cents. Since gas taxes and prices go to the third digit at the pump, our result would have a maximum 95% CI level “at the pump” reading of .455. It feels safe to describe in actual practice with that interval that we’re confident it was 45 cents or lower, even if we’d need a bit more data to say it in specific statistical terms.</p>
 </div>
 
 
