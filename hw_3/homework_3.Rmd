@@ -1,0 +1,83 @@
+---
+title: "Homework 3"
+author: "Joe Davis"
+date: "3/25/2022"
+output: distill::distill_article
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(smss)
+library(alr4)
+library(tidyverse)
+
+
+```
+### Formatting Note ###
+
+Being that this homework has many more sub questions than previous ones, I'm going to move the R chunks to right after the sub questions versus doing the massive wall of code outputs. I assume this will be a welcome change compared to previous efforts.
+
+### Question 1 ###
+
+*For recent data in Jacksonville, Florida, on y = selling price of home (in dollars), x1 = size of home (in square feet), and x2 = lot size (in square feet), the prediction equation is ŷ = −10,536 + 53.8x1 + 2.84x2.*
+
+*-A) A particular home of 1240 square feet on a lot of 18,000 square feet sold for $145,000. Find the predicted selling price and the residual, and interpret.*
+
+```{r, include = TRUE}
+##Question A math work
+  #observed price of home sold
+house_price_actual <- 145000
+
+  #predicted price of home sold
+house_price_prediction <-  -10536 + (53.8*1240) + (2.84*18000)
+
+  #get residual
+  house_price_residual <- house_price_prediction - house_price_actual
+  
+```
+
+For the predicted sale price of the house using 1240 sq ft for x1 and 18000 square ft for x2, I found `r format(house_price_prediction, scientific = FALSE)` and the residual when comparing to the observed sale price of $145,000 is `r format(house_price_residual, scientific = FALSE)`. This means that our model was under-predicted the observed value of home sales by a pretty substantial amount. I suspect this is due to the model failing to account for other variables that explain other factors in the final sale price of a home. Distance to downtown, school districts, or other variables likely play a part in describing the distance between our predicted and actual values.
+
+
+*-B) For fixed lot size, how much is the house selling price predicted to increase for each square-foot increase in home size? Why?*
+
+For each square foot the predicted home price increase is $53.80. This is because the slope for that variable is in change for each increment of the variable on the outcome variable controlling for the other variables in the equation for this particular type of multiple regression. Since lot sized is fixed here, we wind up with the proof of that concept as the intercept and x2 terms would remain constant while only the 53.8x term would change. 
+
+*-C) According to this prediction equation, for fixed home size, how much would lot size need to increase to have the same impact as a one-square-foot increase in home size?*
+
+If we divide the x1 slope by the x2 slope, we will get the square footage the lot size would have to increase by in order to equal the incremental change from a square foot increase of the home size. Calculated as `r round(digits = 2, sum(53.8 / 2.84)) ` square feet rounding to the same digits as that slope term.   
+
+
+### Question 2 ##
+*The data file concerns salary and other characteristics of all faculty in a small Midwestern college collected in the early 1980s for presentation in legal proceedings for which discrimination against women in salary was at issue. All persons in the data hold tenured or tenure track positions; temporary faculty are not included. The variables include degree, a factor with levels PhD and MS; rank, a factor with levels Asst, Assoc, and Prof; sex, a factor with levels Male and Female; Year, years in current rank; ysdeg, years since highest degree, and salary, academic year salary in dollars.*
+
+*-A) Test the hypothesis that the mean salary for men and women is the same, without regard to any other variable but sex. Explain your findings.*
+
+*-B) Run a multiple linear regression with salary as the outcome variable and everything else as predictors, including sex. Assuming no interactions between sex and the other predictors, obtain a 95% confidence interval for the difference in salary between males and females.*
+
+*-C) Interpret your finding for each predictor variable; discuss (a) statistical significance, (b) interpretation of the coefficient / slope in relation to the outcome variable and other variables*
+
+*-D) Change the baseline category for the rank variable. Interpret the coefficients related to rank again.*
+
+*-E) Finkelstein (1980), in a discussion of the use of regression in discrimination cases, wrote, “[a] variable may reflect a position or status bestowed by the employer, in which case if there is discrimination in the award of the position or status, the variable may be ‘tainted.’ ” Thus, for example, if discrimination is at work in promotion of faculty to higher ranks, using rank to adjust salaries before comparing the sexes may not be acceptable to the courts. Exclude the variable rank, refit, and summarize how your findings changed, if they did.*
+
+*-F) Everyone in this dataset was hired the year they earned their highest degree. It is also known that a new Dean was appointed 15 years ago, and everyone in the dataset who earned their highest degree 15 years ago or less than that has been hired by the new Dean. Some people have argued that the new Dean has been making offers that are a lot more generous to newly hired faculty than the previous one and that this might explain some of the variation in Salary.Create a new variable that would allow you to test this hypothesis and run another multiple regression model to test this. Select variables carefully to make sure there is no multicollinearity. Explain why multicollinearity would be a concern in this case and how you avoided it. Do you find support for the hypothesis that the people hired by the new Dean are making higher than those that were not?*
+
+### Question 3 ###
+
+*-A) Using the house.selling.price data, run and report regression results modeling y = selling price (in dollars) in terms of size of home (in square feet) and whether the home is new (1 = yes; 0 = no). (In other words, price is the outcome variable and size and new are the explanatory variables.)*
+
+*-B) Report and interpret the prediction equation, and form separate equations relating selling price to size for new and for not new homes. In particular, for each variable; discuss statistical significance and interpret the meaning of the coefficient.*
+
+*-C) Find the predicted selling price for a home of 3000 square feet that is (i) new, (ii) not new.*
+
+*-D) Fit another model, this time with an interaction term allowing interaction between size and new, and report the regression results*
+
+*-E) Report the lines relating the predicted selling price to the size for homes that are (i) new, (ii) not new.*
+
+*-F) Find the predicted selling price for a home of 3000 square feet that is (i) new, (ii) not new.*
+
+*-G) Find the predicted selling price for a home of 1500 square feet that is (i) new, (ii) not new. Comparing to (F), explain how the difference in predicted selling prices changes as the size of home increases.*
+
+*-H) Do you think the model with interaction or the one without it represents the relationship of size and new to the outcome price? What makes you prefer one model over another?*
+
