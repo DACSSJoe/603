@@ -61,7 +61,8 @@ salary_dat <- as_tibble(salary)
 salary_lm_a <- lm(salary ~ 1 + sex, data = salary_dat)
 
 #use confint to find 95% for sex parameter
-tidy(salary_lm_a)
+tidy(salary_lm_a) #I had a plan for using the broom functions I swear
+#I just realized I should finish the homework instead of mess around with pacakges.
 confint(salary_lm_a)
 ```
 
@@ -156,8 +157,28 @@ Multicollinearity is a concern in this question because the years since highest 
 ### Question 3 ###
 
 *-A) Using the house.selling.price data, run and report regression results modeling y = selling price (in dollars) in terms of size of home (in square feet) and whether the home is new (1 = yes; 0 = no). (In other words, price is the outcome variable and size and new are the explanatory variables.)*
+```{r solve Q3a}
+data("house.selling.price")
+#I like tibbling and assigning to dats, 
+#even if smss wants only data() to be the way
+house_dat <- as.tibble(house.selling.price)
+
+#make the model for Old set as reference
+house_lm_a_old <- lm(Price ~ New + Size, data = house_dat)
+
+
+#summary of new model
+summary(house_lm_a_old)
+
+
+```
 
 *-B) Report and interpret the prediction equation, and form separate equations relating selling price to size for new and for not new homes. In particular, for each variable; discuss statistical significance and interpret the meaning of the coefficient.*
+The combined equation above would be `y = -40230.87 + 116.13x1 + 57736.28x2` where `x1 = sq ft` and `x2 = if the house is New` (dummy variable = 1). Each of the terms is significant at the `.001` level, and size is significant all the way to the `0` code. These terms are all strongly associated with the estimated Price for a home. 
+
+A New home is worth 57,736.28 in price compared to an old home, or `r format(scientific = FALSE, sum(57736.28 - 40230.87))` if we were just looking at a model for new homes. The intercept is the starting point price for an old home, which at -40,230.88 functions as a sort of tax on being pre-owned that the size of the house must compensate for. An older home would have to be larger than a newer home to have the same predicted price.
+
+We can consolidate some of these down for an equation for new homes for `Price = 
 
 *-C) Find the predicted selling price for a home of 3000 square feet that is (i) new, (ii) not new.*
 
