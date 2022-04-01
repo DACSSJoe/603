@@ -145,14 +145,19 @@ salary_dat <- salary_dat %>%
 
 
 #the model
-salary_lm_f <- lm(salary ~ year + sex + degree + rank + new_dean + new_dean*year, data = salary_dat)
+salary_lm_f <- lm(salary ~ year + sex + degree + rank + new_dean  + new_dean*year, data = salary_dat)
 
 #summary of model
 summary(salary_lm_f)
 confint(salary_lm_f, "new_dean", level = .95)
+
+#check variance inflation factor for model
+car::vif(salary_lm_f)
 ```
 
-Multicollinearity is a concern in this question because the years since highest degree and the new variable `new_dean` would be measuring similar things and therefore not clearing the additivity consideration. The variable `year` in rank would also potentially be overlapping with the new_dean dummy variable, as the same pre and post 15 year threshold would potentially be seen there. To deal with this, I added an interaction effect with the   `year` in rank variable and the `new_dean` variable, and after looking at the adjusted R-squared for the model with and without `ysdeg` and a `ysdeg*new_dean` and even the monstrosity of `ysdeg*years*new_dean`, dropping `ysdeg` made for a better fit. This makes sense as the variable itself lost significance when the `rank` level was included previously, so dropping that term and adding the interaction effect should deal with the multicollinearity. I do find support at the .05 significance level that being hired by the new Dean are making a higher wage than those that were not. The estimated dollar amount of the effect is 3789.08, and I printined the 95% confidence interval above as well.
+Multicollinearity is a concern in this question because the years since highest degree and the new variable `new_dean` would be measuring similar things and therefore not clearing the additivity consideration. The variable `year` in rank would also potentially be overlapping with the new_dean dummy variable, as the same pre and post 15 year threshold would potentially be seen there. To deal with this, I added an interaction effect with the   `year` in rank variable and the `new_dean` variable, and after looking at the adjusted R-squared for the model with and without `ysdeg` and a `ysdeg*new_dean` and even the monstrosity of `ysdeg*years*new_dean`, dropping `ysdeg` made for a better fit. This makes sense as the variable itself lost significance when the `rank` level was included previously, so dropping that term and adding the interaction effect should deal with the multicollinearity. I also checked the variable inflation factor, and using the second GVIF since I'm using more than one coefficient, and none of the values is near or over 5 to investigate further. The `new_dean` and `ysdeg` did have the highest values, however.
+
+I do find support at the .05 significance level that being hired by the new Dean are making a higher wage than those that were not. The estimated dollar amount of the effect is 3789.08, and I printed the 95% confidence interval above as well.
 
 ### Question 3 ###
 
@@ -161,7 +166,7 @@ Multicollinearity is a concern in this question because the years since highest 
 data("house.selling.price")
 #I like tibbling and assigning to dats, 
 #even if smss wants only data() to be the way
-house_dat <- as.tibble(house.selling.price)
+house_dat <- as_tibble(house.selling.price)
 
 #make the model for Old set as reference
 house_lm_a_old <- lm(Price ~ New + Size, data = house_dat)
@@ -178,17 +183,76 @@ The combined equation above would be `y = -40230.87 + 116.13x1 + 57736.28x2` whe
 
 A New home is worth 57,736.28 in price compared to an old home, or `r format(scientific = FALSE, sum(57736.28 - 40230.87))` if we were just looking at a model for new homes. The intercept is the starting point price for an old home, which at -40,230.88 functions as a sort of tax on being pre-owned that the size of the house must compensate for. An older home would have to be larger than a newer home to have the same predicted price.
 
-We can consolidate some of these down for an equation for new homes for `Price = 
+We can consolidate the starting price point estimates down for an equation for new homes as `Price = 17505.41 + 116.13*x1` and for old homes `Price = 116.13*x1 -40230.87`. 
 
 *-C) Find the predicted selling price for a home of 3000 square feet that is (i) new, (ii) not new.*
+```{r Solve Q3c}
+#for the new house with x1 = 3000 sq ft
+price_new_3k <- (116.13*3000) + 17505.41
+  
+#for the old house with x1 3000 sq ft
+price_old_3k <- (116.13*3000) - 40230
+```
+
+For the 3000 square foot new home, `r format(scientific = FALSE, price_new_3k)`. For the old 3000 square foot home the prediction is `r format(scientific = FALSE, price_old_3k)`. I wish I would have been shopping for a home in Gainesville, FL in 2006. Well, except for the whole housing bubble thing that is about to happen back then. Living through that once was enough.
 
 *-D) Fit another model, this time with an interaction term allowing interaction between size and new, and report the regression results*
 
+```{r Solve Q3d}
+#make the new house price model with new and size interaction term
+house_lm_d <- lm(Price ~ Size + New + New*Size, data = house_dat)
+
+#summary of the model
+summary(house_lm_d)
+```
+
 *-E) Report the lines relating the predicted selling price to the size for homes that are (i) new, (ii) not new.*
+```{r Solve Q3e}
+#start with the overall interaction model to simplify
+  #smss uses z for categorical, switch to that vs x2 from earlier.
+  #z = new, x = sq ft
+
+#house_lm_e <- -22227.81 -78527.50x + 104.44x + 61.92(x*z)
+
+#old model line
+#house_lm_e_old <- -22227.81 + (104.44*x)
+
+#new model line
+#house_lm_e_new <- -100755.31 + (104.44*x) + (61.92*x) 
+#house_lm_e_new <- -100755.31 + (166.36*x)
+
+
+```
+
+I commented out the line functions as to not have to get the actual assignment of the `Size` variables and all that, but the line for old homes is `Predicted Price = -22227.81 + (104.44*size)` and for new homes it is `Predicted Price = -100755.31 + (166.36*size)`. 
 
 *-F) Find the predicted selling price for a home of 3000 square feet that is (i) new, (ii) not new.*
+```{r Solve Q3f}
+#(i) x = 3000 sq ft for new home
+lm_int_predict_30k_new <- (166.36*3000) -100755.31
+
+#(ii) x = 3000 sq ft for old home
+lm_int_predict_30k_old <- (104.44*3000) -22227.81
+```
+For (i) the predicted selling price is `r format(scientific = FALSE, lm_int_predict_30k_new)`. For (ii) the predicted selling price is `r format(scientific = FALSE, lm_int_predict_30k_old)`.
 
 *-G) Find the predicted selling price for a home of 1500 square feet that is (i) new, (ii) not new. Comparing to (F), explain how the difference in predicted selling prices changes as the size of home increases.*
 
-*-H) Do you think the model with interaction or the one without it represents the relationship of size and new to the outcome price? What makes you prefer one model over another?*
+```{r Solve Q3g}
+#(i) x = 1500 sq ft for new home
+lm_int_predict_15k_new <- (166.36*1500) - 100755.31
 
+#(ii) x = 1500 sq ft for old home
+lm_int_predict_15k_old <- (104.44*1500) -22227.81
+
+```
+For (i) the predicted selling price is `r format(scientific = FALSE, lm_int_predict_15k_new)` and for (ii) it is predicted to be `r format(scientific = FALSE, lm_int_predict_15k_old)`. The gap is smaller when compared to the answers for (F), since the slope is higher for new homes. We would expect this as the house size got bigger that new homes would be worth an increasing level more than old homes, roughly 62 dollars per square foot more for each incremental increase. 
+
+*-H) Do you think the model with interaction or the one without it represents the relationship of size and new to the outcome price? What makes you prefer one model over another?*
+```{r Solve Q3h}
+#do anova on the two models instead of summary!
+
+anova(house_lm_a_old, house_lm_d)
+
+```
+Instead of just comparing the `R^2` and such from the summaries of the models already printed, I decided to look at the anova results comparing the `house_lm_a_old` model with no interaction to the `house_lm_d` model which included the interaction effects. At the .001 significance level, the model including the interaction term does improve the model at capturing the data. I would use the `house_lm_d` model for predictions as a result if choosing between the two.
