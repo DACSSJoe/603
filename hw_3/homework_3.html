@@ -1505,13 +1505,218 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <p><em>-C) According to this prediction equation, for fixed home size, how much would lot size need to increase to have the same impact as a one-square-foot increase in home size?</em></p>
 <p>If we divide the x1 slope by the x2 slope, we will get the square footage the lot size would have to increase by in order to equal the incremental change from a square foot increase of the home size. Calculated as 18.94 square feet rounding to the same digits as that slope term.</p>
 <h3 id="question-2">Question 2</h3>
-<p><em>The data file concerns salary and other characteristics of all faculty in a small Midwestern college collected in the early 1980s for presentation in legal proceedings for which discrimination against women in salary was at issue. All persons in the data hold tenured or tenure track positions; temporary faculty are not included. The variables include degree, a factor with levels PhD and MS; rank, a factor with levels Asst, Assoc, and Prof; sex, a factor with levels Male and Female; Year, years in current rank; ysdeg, years since highest degree, and salary, academic year salary in dollars.</em></p>
-<p><em>-A) Test the hypothesis that the mean salary for men and women is the same, without regard to any other variable but sex. Explain your findings.</em></p>
+<em>The data file concerns salary and other characteristics of all faculty in a small Midwestern college collected in the early 1980s for presentation in legal proceedings for which discrimination against women in salary was at issue. All persons in the data hold tenured or tenure track positions; temporary faculty are not included. The variables include degree, a factor with levels PhD and MS; rank, a factor with levels Asst, Assoc, and Prof; sex, a factor with levels Male and Female; Year, years in current rank; ysdeg, years since highest degree, and salary, academic year salary in dollars.</em>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co">##load the data for the following questions</span>
+<span class="va">salary_dat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html">as_tibble</a></span><span class="op">(</span><span class="va">salary</span><span class="op">)</span>
+</code></pre>
+</div>
+</div>
+<em>-A) Test the hypothesis that the mean salary for men and women is the same, without regard to any other variable but sex. Explain your findings.</em>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co">## Ho: men_salary = women_salary. Ha: men_salary =/= women_salary, telling it to fit intercept explicitly in the lm function of means with a factor variable</span>
+<span class="va">salary_lm_a</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html">lm</a></span><span class="op">(</span><span class="va">salary</span> <span class="op">~</span> <span class="fl">1</span> <span class="op">+</span> <span class="va">sex</span>, data <span class="op">=</span> <span class="va">salary_dat</span><span class="op">)</span>
+
+<span class="co">#use confint to find 95% for sex parameter</span>
+<span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html">tidy</a></span><span class="op">(</span><span class="va">salary_lm_a</span><span class="op">)</span>
+</code></pre>
+</div>
+<pre><code># A tibble: 2 × 5
+  term        estimate std.error statistic  p.value
+  &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;
+1 (Intercept)   24697.      938.     26.3  5.76e-31
+2 sexFemale     -3340.     1808.     -1.85 7.06e- 2</code></pre>
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="fu"><a href="https://rdrr.io/r/stats/confint.html">confint</a></span><span class="op">(</span><span class="va">salary_lm_a</span><span class="op">)</span>
+</code></pre>
+</div>
+<pre><code>               2.5 %    97.5 %
+(Intercept) 22812.81 26580.773
+sexFemale   -6970.55   291.257</code></pre>
+</div>
+<p>By fitting a model for the data and getting a fit for the intercept, which will represent the <code>Male</code> salary data and the fit for the <code>Female</code> survey data we can compare their means and get p-value for the <code>Female</code> salary data. With the estimated level for the Female variable at -3340 of the intercept/Male data, we can say that we estimate that men are being paid more by just over 3300 dollars. We are confident of this at the .1 level for the two sided test, and looking at the <code>confint</code> range it seems likely that people in the <code>Female</code> dataset at this school were getting paid lower looking at the <code>sex</code> variable alone.</p>
 <p><em>-B) Run a multiple linear regression with salary as the outcome variable and everything else as predictors, including sex. Assuming no interactions between sex and the other predictors, obtain a 95% confidence interval for the difference in salary between males and females.</em></p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co">## Do the linear model for all of the variables. Year is lowercase unlike Q</span>
+<span class="va">salary_lm_b</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html">lm</a></span><span class="op">(</span><span class="va">salary</span> <span class="op">~</span> <span class="va">sex</span> <span class="op">+</span> <span class="va">degree</span> <span class="op">+</span> <span class="va">rank</span> <span class="op">+</span> <span class="va">year</span> <span class="op">+</span> <span class="va">ysdeg</span>, data <span class="op">=</span> <span class="va">salary_dat</span><span class="op">)</span>
+
+<span class="co">#look at the model summary. point estimate has flipped to positive. hmm.</span>
+<span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">salary_lm_b</span><span class="op">)</span>
+</code></pre>
+</div>
+<pre><code>
+Call:
+lm(formula = salary ~ sex + degree + rank + year + ysdeg, data = salary_dat)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-4045.2 -1094.7  -361.5   813.2  9193.1 
+
+Coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept) 15746.05     800.18  19.678  &lt; 2e-16 ***
+sexFemale    1166.37     925.57   1.260    0.214    
+degreePhD    1388.61    1018.75   1.363    0.180    
+rankAssoc    5292.36    1145.40   4.621 3.22e-05 ***
+rankProf    11118.76    1351.77   8.225 1.62e-10 ***
+year          476.31      94.91   5.018 8.65e-06 ***
+ysdeg        -124.57      77.49  -1.608    0.115    
+---
+Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+
+Residual standard error: 2398 on 45 degrees of freedom
+Multiple R-squared:  0.855, Adjusted R-squared:  0.8357 
+F-statistic: 44.24 on 6 and 45 DF,  p-value: &lt; 2.2e-16</code></pre>
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co">#confint for the sexFemale</span>
+<span class="fu"><a href="https://rdrr.io/r/stats/confint.html">confint</a></span><span class="op">(</span><span class="va">salary_lm_b</span>, <span class="st">&quot;sexFemale&quot;</span>, level <span class="op">=</span> <span class="fl">.95</span><span class="op">)</span>
+</code></pre>
+</div>
+<pre><code>              2.5 %   97.5 %
+sexFemale -697.8183 3030.565</code></pre>
+</div>
+<p>Only the next question asks for the interpretation, but I’ll put that question for this variable examination here. The p-value for the <code>sexFemale</code> variable is above thresholds for significance, so the confidence in our interval of difference is pretty low. I’m suspicious of it. The positive point estimate as well as the range on the interval, however, would suggest that holding all else equal that <code>sexFemale</code> is associated with a <em>higher</em> salary.</p>
 <p><em>-C) Interpret your finding for each predictor variable; discuss (a) statistical significance, (b) interpretation of the coefficient / slope in relation to the outcome variable and other variables</em></p>
-<p><em>-D) Change the baseline category for the rank variable. Interpret the coefficients related to rank again.</em></p>
+<p>The <code>rank</code> variable and its levels of Professor and Associate Professor are significant all the way up at the functional 0 level in relation to the Assistant Professor level. The coefficients show that each level of <code>rank</code> that a Professor climbs is associate with a little bit more than five thousand dollar increase in our predicted salary formula.</p>
+<p>The <code>year</code> someone has been in the current rank variable level is significant at the same level code, but with a much lower slope when compared to the coefficient leap between ranks suggesting that getting across the cataegory threshold in <code>rank</code> is more important than time served for salary. Between 10 and 12 years of service equates to the change in a <code>rank</code> level.</p>
+<p>The <code>degreePhD</code> coefficient is not significant with its <code>p</code> of .180, but it does have a positive value of 1388.61. I was a little surprised by this one, but perhaps the rank variable or something else picks up the effects of higher education? I would have assumed it would have been a little bit higher from the very little I know about general education union contracts. But hey, it was the 1980’s who knows what was going on.</p>
+<p>The <code>ysdeg</code> variable has a slightly negative slope, but it is just beyond the .1 level of significance. The only thing I could think of that might explain the slope generally, though I’m not certain it’s really helping the model all that much given the other categories, would be to adjust some of the longer serving professors who only have masters degrees downwards slightly, and since we don’t have an interaction between the <code>ysdeg</code> and <code>degree</code> level it’s messy enough to not be at a statistically significant level.</p>
+<p><em>-D) Change the baseline category for the rank variable. Interpret the coefficients related to rank again.</em> My lack of clear reading of the instructions on the variables almost got me again, just like the quizzes! However, I realized just in time that the <code>rank</code> variable has three levels and I was thinking about the <code>degree</code> variable in my head for some reason. Phew, okay I’m going to relevel the <code>rank</code> variable on Associate Professor and check it out.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co">#relevel the rank variable, run the model again</span>
+<span class="va">salary_dat</span><span class="op">$</span><span class="va">rank</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/relevel.html">relevel</a></span><span class="op">(</span><span class="va">salary_dat</span><span class="op">$</span><span class="va">rank</span>, ref <span class="op">=</span> <span class="st">&quot;Assoc&quot;</span><span class="op">)</span>
+
+<span class="co">#new model</span>
+<span class="va">salary_lm_d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html">lm</a></span><span class="op">(</span><span class="va">salary</span> <span class="op">~</span> <span class="va">rank</span> <span class="op">+</span> <span class="va">sex</span> <span class="op">+</span> <span class="va">degree</span> <span class="op">+</span> <span class="va">year</span> <span class="op">+</span> <span class="va">ysdeg</span>, data <span class="op">=</span> <span class="va">salary_dat</span><span class="op">)</span>
+
+<span class="co">#summarizing the model</span>
+<span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">salary_lm_d</span><span class="op">)</span>
+</code></pre>
+</div>
+<pre><code>
+Call:
+lm(formula = salary ~ rank + sex + degree + year + ysdeg, data = salary_dat)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-4045.2 -1094.7  -361.5   813.2  9193.1 
+
+Coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept) 21038.41    1109.12  18.969  &lt; 2e-16 ***
+rankAsst    -5292.36    1145.40  -4.621 3.22e-05 ***
+rankProf     5826.40    1012.93   5.752 7.28e-07 ***
+sexFemale    1166.37     925.57   1.260    0.214    
+degreePhD    1388.61    1018.75   1.363    0.180    
+year          476.31      94.91   5.018 8.65e-06 ***
+ysdeg        -124.57      77.49  -1.608    0.115    
+---
+Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+
+Residual standard error: 2398 on 45 degrees of freedom
+Multiple R-squared:  0.855, Adjusted R-squared:  0.8357 
+F-statistic: 44.24 on 6 and 45 DF,  p-value: &lt; 2.2e-16</code></pre>
+</div>
+<p>Now that the middle <code>rank</code> is the reference category, the coefficients have shifted so that the roughly five thousand dollar increase we predict as you go up the scale is now seen in the in the -5292.36 coefficient value of stepping down to the <code>Asst</code> level, and the same 5826.4 increase that we saw in the last model going from <code>Assoc</code> to <code>Prof</code>.</p>
 <p><em>-E) Finkelstein (1980), in a discussion of the use of regression in discrimination cases, wrote, “[a] variable may reflect a position or status bestowed by the employer, in which case if there is discrimination in the award of the position or status, the variable may be ‘tainted.’” Thus, for example, if discrimination is at work in promotion of faculty to higher ranks, using rank to adjust salaries before comparing the sexes may not be acceptable to the courts. Exclude the variable rank, refit, and summarize how your findings changed, if they did.</em></p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co">#same as salary_lm_b but removing rank.</span>
+<span class="va">salary_lm_e</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html">lm</a></span><span class="op">(</span><span class="va">salary</span> <span class="op">~</span> <span class="va">sex</span> <span class="op">+</span> <span class="va">degree</span> <span class="op">+</span> <span class="va">year</span> <span class="op">+</span> <span class="va">ysdeg</span>, data <span class="op">=</span> <span class="va">salary_dat</span><span class="op">)</span>
+
+<span class="co">#summary of model</span>
+<span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">salary_lm_e</span><span class="op">)</span>
+</code></pre>
+</div>
+<pre><code>
+Call:
+lm(formula = salary ~ sex + degree + year + ysdeg, data = salary_dat)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-8146.9 -2186.9  -491.5  2279.1 11186.6 
+
+Coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept) 17183.57    1147.94  14.969  &lt; 2e-16 ***
+sexFemale   -1286.54    1313.09  -0.980 0.332209    
+degreePhD   -3299.35    1302.52  -2.533 0.014704 *  
+year          351.97     142.48   2.470 0.017185 *  
+ysdeg         339.40      80.62   4.210 0.000114 ***
+---
+Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+
+Residual standard error: 3744 on 47 degrees of freedom
+Multiple R-squared:  0.6312,    Adjusted R-squared:  0.5998 
+F-statistic: 20.11 on 4 and 47 DF,  p-value: 1.048e-09</code></pre>
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="fu"><a href="https://rdrr.io/r/stats/confint.html">confint</a></span><span class="op">(</span><span class="va">salary_lm_e</span>, <span class="st">&quot;sexFemale&quot;</span>, level <span class="op">=</span> <span class="fl">.95</span><span class="op">)</span>
+</code></pre>
+</div>
+<pre><code>              2.5 %   97.5 %
+sexFemale -3928.138 1355.049</code></pre>
+</div>
+<p>The <code>sexFemale</code> coefficient is back to being a negative value relative to the <code>Male</code> level in our intercept. The <code>p</code> value is above significance thresholds, however.</p>
+<p>Outside of the main point of the question, I’m a little stumped on why the <code>degreePhD</code> coefficient is negative relative to the <code>Masters</code>level in the intercept besides perhaps small sample size messiness. The<code>ysdeg</code> variable looks like it picks up some of the descriptive power that the rank variable left behind as we would expect. I would have assumed some of the same for PhD. I’m sure my self-narration of something that’s potentially indicating the whole function is wrong and therefore all of my answers will be amusing after I see the actual answers.</p>
 <p><em>-F) Everyone in this dataset was hired the year they earned their highest degree. It is also known that a new Dean was appointed 15 years ago, and everyone in the dataset who earned their highest degree 15 years ago or less than that has been hired by the new Dean. Some people have argued that the new Dean has been making offers that are a lot more generous to newly hired faculty than the previous one and that this might explain some of the variation in Salary.Create a new variable that would allow you to test this hypothesis and run another multiple regression model to test this. Select variables carefully to make sure there is no multicollinearity. Explain why multicollinearity would be a concern in this case and how you avoided it. Do you find support for the hypothesis that the people hired by the new Dean are making higher than those that were not?</em></p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co">#relevel rank</span>
+<span class="va">salary_dat</span><span class="op">$</span><span class="va">rank</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/relevel.html">relevel</a></span><span class="op">(</span><span class="va">salary_dat</span><span class="op">$</span><span class="va">rank</span>, ref <span class="op">=</span> <span class="st">&quot;Asst&quot;</span><span class="op">)</span>
+
+<span class="co">#make a dummy variable for years since degree less than 15 to note as hired by new_dean.</span>
+<span class="va">salary_dat</span> <span class="op">&lt;-</span> <span class="va">salary_dat</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span>
+  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>new_dean <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/case_when.html">case_when</a></span><span class="op">(</span>
+    <span class="va">ysdeg</span> <span class="op">&lt;=</span> <span class="fl">15</span> <span class="op">~</span> <span class="fl">1</span>,
+    <span class="va">ysdeg</span> <span class="op">&gt;</span> <span class="fl">15</span> <span class="op">~</span> <span class="fl">0</span>
+  <span class="op">)</span><span class="op">)</span>
+
+
+
+<span class="co">#the model</span>
+<span class="va">salary_lm_f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html">lm</a></span><span class="op">(</span><span class="va">salary</span> <span class="op">~</span> <span class="va">year</span> <span class="op">+</span> <span class="va">sex</span> <span class="op">+</span> <span class="va">degree</span> <span class="op">+</span> <span class="va">rank</span> <span class="op">+</span> <span class="va">new_dean</span> <span class="op">+</span> <span class="va">new_dean</span><span class="op">*</span><span class="va">year</span>, data <span class="op">=</span> <span class="va">salary_dat</span><span class="op">)</span>
+
+<span class="co">#summary of model</span>
+<span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">salary_lm_f</span><span class="op">)</span>
+</code></pre>
+</div>
+<pre><code>
+Call:
+lm(formula = salary ~ year + sex + degree + rank + new_dean + 
+    new_dean * year, data = salary_dat)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-3309.8 -1102.5  -265.2   539.2  9339.4 
+
+Coefficients:
+              Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)   12011.05    1931.93   6.217 1.62e-07 ***
+year            495.72      97.42   5.088 7.20e-06 ***
+sexFemale      1115.96     862.06   1.295   0.2022    
+degreePhD      1161.63     859.23   1.352   0.1833    
+rankAssoc      5416.07    1079.72   5.016 9.14e-06 ***
+rankProf      11612.80    1284.64   9.040 1.37e-11 ***
+new_dean       3789.08    1867.72   2.029   0.0486 *  
+year:new_dean  -195.43     183.99  -1.062   0.2940    
+---
+Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+
+Residual standard error: 2358 on 44 degrees of freedom
+Multiple R-squared:  0.8629,    Adjusted R-squared:  0.8411 
+F-statistic: 39.58 on 7 and 44 DF,  p-value: &lt; 2.2e-16</code></pre>
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="fu"><a href="https://rdrr.io/r/stats/confint.html">confint</a></span><span class="op">(</span><span class="va">salary_lm_f</span>, <span class="st">&quot;new_dean&quot;</span>, level <span class="op">=</span> <span class="fl">.95</span><span class="op">)</span>
+</code></pre>
+</div>
+<pre><code>            2.5 %  97.5 %
+new_dean 24.93623 7553.22</code></pre>
+</div>
+<p>Multicollinearity is a concern in this question because the years since highest degree and the new variable <code>new_dean</code> would be measuring similar things and therefore not clearing the additivity consideration. The variable <code>year</code> in rank would also potentially be overlapping with the new_dean dummy variable, as the same pre and post 15 year threshold would potentially be seen there. To deal with this, I added an interaction effect with the <code>year</code> in rank variable and the <code>new_dean</code> variable, and after looking at the adjusted R-squared for the model with and without <code>ysdeg</code> and a <code>ysdeg*new_dean</code> and even the monstrosity of <code>ysdeg*years*new_dean</code>, dropping <code>ysdeg</code> made for a better fit. This makes sense as the variable itself lost significance when the <code>rank</code> level was included previously, so dropping that term and adding the interaction effect should deal with the multicollinearity. I do find support at the .05 significance level that being hired by the new Dean are making a higher wage than those that were not. The estimated dollar amount of the effect is 3789.08, and I printined the 95% confidence interval above as well.</p>
 <h3 id="question-3">Question 3</h3>
 <p><em>-A) Using the house.selling.price data, run and report regression results modeling y = selling price (in dollars) in terms of size of home (in square feet) and whether the home is new (1 = yes; 0 = no). (In other words, price is the outcome variable and size and new are the explanatory variables.)</em></p>
 <p><em>-B) Report and interpret the prediction equation, and form separate equations relating selling price to size for new and for not new homes. In particular, for each variable; discuss statistical significance and interpret the meaning of the coefficient.</em></p>
@@ -1521,7 +1726,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <p><em>-F) Find the predicted selling price for a home of 3000 square feet that is (i) new, (ii) not new.</em></p>
 <p><em>-G) Find the predicted selling price for a home of 1500 square feet that is (i) new, (ii) not new. Comparing to (F), explain how the difference in predicted selling prices changes as the size of home increases.</em></p>
 <p><em>-H) Do you think the model with interaction or the one without it represents the relationship of size and new to the outcome price? What makes you prefer one model over another?</em></p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <!--radix_placeholder_article_footer-->
 <!--/radix_placeholder_article_footer-->
 </div>
