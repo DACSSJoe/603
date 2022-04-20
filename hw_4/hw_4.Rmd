@@ -1,0 +1,135 @@
+---
+title: "Homework 4"
+author: "Joe Davis"
+date: "4/17/2022"
+output: distill::distill_article
+description: "Homework 4"
+---
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(include = TRUE)
+library(tidyverse)
+library(smss)
+library(alr4)
+library(corrplot)
+library(MASS)
+library(broom)
+```
+## Part One ##
+
+### Question 1 ###
+
+```{r Question 1 ABC, echo=TRUE}
+#Reproduce the Correlation Plot
+data(house.selling.price.2)
+house_dat <- house.selling.price.2
+house_corr_dat <- cor(round(house_dat,2))
+house_corr_plot <- corrplot(house_corr_dat, method = "number")
+
+#Reproduce the Initial Model 
+full_house_model <- lm(P ~ ., data = house_dat)
+summary(full_house_model)
+```
+
+-*A)For backward elimination, which variable would be deleted first? Why?*
+
+For backward elimination, the `Beds` variable would be the first to be removed. This is because of the large `P-value` seen for that variable in the model looking at all of the variables of `.487`.
+
+-*B) For forward selection, which variable would be added first? Why?*
+
+For forward selection, the variable `Size` would be the first one to add to the model, as it has the highest correlation with our outcome variable of `Price`.
+
+-*C) Why do you think that BEDS has such a large P-value in the multiple regression model, even though it has a substantial correlation with PRICE?*
+
+I think this is because the `Size` variable is capturing most of what the `Beds` variable would be describing, as those two variables are correlated with each other at `.669` in the matrix, the third highest correlation between all of the variables. The `Baths` variable has a similar sort of pattern and likely relates to the number of `Beds` too, however given the specialty build outs needed for bathrooms versus the relatively easy process of converting space to another bedroom, that variable seems to carry extra signal that wouldn't be covered by its square footage alone.
+
+-*D) Using software with these four predictors, find the model that would be selected using each criterion:*
+
+I used the `StepAIC` function from `MASS` below going in the forward variable selection directions per the `SMSS` R software instructional section. I won't recreate the whole chart as it exists in the book reading section, but most of it is there from forward selection, so I will just select from the final selected model from `StepAIC` versus recreating the chart for all variables and diagnostics.
+  
+  -*R2*
+  
+For `R2` the model that would be best is the `full_house_model` since each variable adds to the value, even if in this case it is a very small value, removing any variables would lower this value. 
+
+  -*Adjusted R2*
+For adjusted `R2`, the extra variable penalty drops the full model just below the `house_step_select` model.
+
+  -*PRESS*
+  For PRESS, `house_step_select` has the lower PRESS value, so that would be the selection for this criteria as well.
+
+  -*AIC*
+`house_step_select` has the lower `AIC` value so that would be the best model by this criteria.
+
+  -*BIC*
+The `BIC` value for the `house_step_select` model is (below as `step_model_stats`) slightly lower than the full variable model value of `full_model_stats`, so we would select that one.
+
+-*E) Explain which model you prefer and why.*
+
+I would probably want to know more about the use case of the model, as perhaps if we were using this for prediction for unseen data, the beds variable could be useful with changing building codes or other quirks. As is, I would select the more parsimonious with basically the same adjusted R2 value on descriptive power as the full model `house_step_select` model.
+
+```{r Question 1, Part D}
+#StepAIC in both directions for model selection. 
+#Need to define the Upper and Lower Scope for foward selection
+null_house_model <- lm(P ~ 1, data = house_dat)
+
+house_step_select <- stepAIC(null_house_model, direction = "forward", scope = ~ S + Be + Ba + New)
+
+#glance from broom for stats in tidy format
+full_model_stats <- glance(full_house_model)
+step_model_stats <- glance(house_step_select)
+
+full_model_stats
+step_model_stats 
+
+#make the PRESS function
+
+PRESS <- function(linear.model) {
+    pr <- residuals(linear.model)/(1 - lm.influence(linear.model)$hat)
+    sum(pr^2)
+}
+    
+#use PRESS on both Models
+PRESS(full_house_model)
+PRESS(house_step_select)
+```
+
+### Question 2 ###
+*“This data set provides measurements of the diameter, height and volume of timber in 31 felled black cherry trees. Note that the diameter (in inches) is erroneously labelled Girth in the data. It is measured at 4 ft 6 in above the ground.”*
+
+*Tree volume estimation is a big deal, especially in the lumber industry. Use the trees data to build a basic model of tree volume prediction. In particular, fit a multiple regression model with  the Volume as the outcome and Girth  and Height as the explanatory variables*
+
+*Run regression diagnostic plots on the model. Based on the plots, do you think any of the regression assumptions is violated?*
+
+Yes, based off of the diagnostic plots many assumptions are violated. The residuals vs fitted values graph is curved suggesting that the linearity assumption is violated, and the values do not form a horizontal band so the variance in the error terms doesn't appear to be equal. The Scale-Location graph also backs that up, with it being very far from being considered horizontal. Only one section of the QQ plot has observation definetly falling along the line before the straying, suggesting normality assumptions could be violated as well but I would investigate that further if everything else wasn't so wonky already. The Cook's distance plots also show an outlier point which is concerning for influence over the model.
+
+```{r Question 2}
+
+trees_dat <- trees
+
+#The Model
+trees_model <- lm(Volume ~ Height + Girth, data = trees_dat)
+summary(trees_model)
+
+#Diagnostic Plots
+plot(trees_model)
+
+
+```
+
+### Question 3 ###
+*In the 2000 election for U.S. president, the counting of votes in Florida was controversial. In Palm Beach County in south Florida, for example, voters used a so-called butterfly ballot. Some believe that the layout of the ballot caused some voters to cast votes for Buchanan when their intended choice was Gore.*
+
+*The data has variables for the number of votes for each candidate—Gore, Bush, and Buchanan. Run a simple linear regression model where the Buchanan vote is the outcome and the Bush vote is the explanatory variable. Produce the regression diagnostic plots. Is Palm Beach County an outlier based on the diagnostic plots? Why or why not?*
+
+Sure, it's over twenty years later but this does still sting. Palm Beach County is absolutely an outlier, and this is before we get to all of the other shenanigans. It's beyond the Cook's distance threshold of 1 on the QQ plot, and though `Dade` also has that influence level, the scale of it's distance in that plot as well as the scale of its errors in the other diagnostic plots (for Residuals vs Fitted plot it's ~ 2.5x the residual difference of Dade!) isn't nearly as substantial as that of `Palm Beach County`. 
+
+```{r Question 3}
+election_dat <- florida
+#wow this is still a painful example problem to be honest
+
+election_model <- lm(Buchanan ~ Bush, data = election_dat)
+plot(election_model)
+#wow yep that's painful. 
+
+```
+
